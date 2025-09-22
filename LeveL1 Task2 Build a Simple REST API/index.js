@@ -2,15 +2,41 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const { body, validationResult } = require("express-validator");
+const util = require("util");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const conn = require("../DB/DBConnection");
+
 app.use(bodyParser.json());
 
 // Sample route to get all tasks
-app.get('/tasks', (req, res) => {
-  res.json({ message: 'List of tasks' });
+app.get('/tasks', 
+    body('title').isString(),
+    body('description')
+        .isLength({ min: 8, max: 12 })
+        .withMessage("password should be between (8-12) character"),
+    body('status').isIn(['pending', 'in-progress', 'completed']),
+    async (req, res) => {
+        try {
+             // 1- VALIDATION REQUEST [manual, express validation]
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ errors: errors.array() });
+                }
+            const query = util.promisify(conn.query).bind(conn);
+            
+                const tasks = await query('SELECT * FROM tasks');
+                res.json({ message: 'List of tasks', tasks: tasks.rows });
+            
+                console.error('Error fetching tasks', err);
+                return res.status(500).json({ error: 'Internal server error' });
+        } catch (err) {
+            console.error('Error fetching tasks', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
 });
 
 // Sample route to create a new task
