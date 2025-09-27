@@ -2,6 +2,8 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
+const path = require('path');
 const { body, validationResult } = require("express-validator");
 const util = require("util");
 
@@ -11,6 +13,11 @@ const PORT = process.env.PORT || 3000;
 const conn = require("./DB Conn");
 
 app.use(bodyParser.json());
+// Enable CORS so the frontend can call the API (also safe when serving static files from same origin)
+app.use(cors());
+
+// Serve static frontend files (so visiting http://localhost:3000 serves index.html)
+app.use(express.static(path.join(__dirname)));
 
 // Sample route to get all tasks
 app.get('/tasks',
@@ -27,27 +34,41 @@ app.get('/tasks',
 );
 
 // Sample route to create a new task
-app.post('/task', 
+app.post(
+  '/task', 
   [
     body('title').notEmpty().withMessage('Title is required'),
     body('description').isLength({ min: 5 }).withMessage('Description must be at least 5 characters long'),
-    body('status').optional().isIn(['pending', 'in-progress', 'completed']).withMessage('Invalid status value')
+    body('status')
+      .optional()
+      .isIn(['pending', 'in-progress', 'completed'])
+      .withMessage('Invalid status value')
   ],
-  async(req, res) => {
+  async (req, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
+
       const { title, description, status } = req.body;
-      const newTask = await conn.query('INSERT INTO tasks (title, description, status) VALUES ($1, $2, $3) RETURNING *', [title, description, status || 'pending']);
-      console.log(newTask.rows);
-      res.status(200).json({ message: 'Task created', task: newTask.rows });
+
+      const newTask = await conn.query(
+        'INSERT INTO tasks (title, description, status) VALUES ($1, $2, $3) RETURNING *',
+        [title, description, status || 'pending']
+      );
+
+      res.status(201).json({
+        message: 'Task created',
+        task: newTask.rows[0]   // ✅ now frontend can display correctly
+      });
     } catch (err) {
       console.error('Error creating task', err);
       return res.status(500).json({ error: 'Internal server error' });
     }
-});
+  }
+);
+
 
 
 // Sample route to update a task

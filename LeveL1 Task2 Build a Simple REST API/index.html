@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f4f4f9;
+    }
+    h1 {
+      color: #333;
+    }
+    form {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #fff;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .completed {
+      text-decoration: line-through;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <h1>Task Manager</h1>
+
+  <!-- Add Task Form -->
+  <form id="taskForm">
+    <input type="text" id="title" placeholder="Task title" required>
+    <input type="text" id="description" placeholder="Task description" required>
+    <select id="status">
+      <option value="pending">Pending</option>
+      <option value="in-progress">In Progress</option>
+      <option value="completed">Completed</option>
+    </select>
+    <button type="submit">Add Task</button>
+  </form>
+
+  <!-- Task List -->
+  <ul id="taskList"></ul>
+
+  <script>
+    const API_URL = "http://localhost:3000"; // adjust if your backend runs on another port
+
+    // Fetch tasks and display them
+    async function fetchTasks() {
+      const res = await fetch(`${API_URL}/tasks`);
+      const data = await res.json();
+      const taskList = document.getElementById("taskList");
+      taskList.innerHTML = "";
+
+      data.tasks.forEach(task => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span class="${task.status === 'completed' ? 'completed' : ''}">
+            <strong>${task.title}</strong> - ${task.description} 
+            [${task.status}]
+          </span>
+          <div>
+            <button onclick="updateTask(${task.id}, 'completed')">✅ Complete</button>
+            <button onclick="deleteTask(${task.id})">❌ Delete</button>
+          </div>
+        `;
+        taskList.appendChild(li);
+      });
+    }
+
+    // Add new task
+    document.getElementById("taskForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value;
+      const description = document.getElementById("description").value;
+      const status = document.getElementById("status").value;
+
+      await fetch(`${API_URL}/task`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, status })
+      });
+
+      e.target.reset();
+      fetchTasks();
+    });
+
+    // Update task (mark as completed)
+    async function updateTask(id, status) {
+      await fetch(`${API_URL}/tasks/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      fetchTasks();
+    }
+
+    // Delete task
+    async function deleteTask(id) {
+      await fetch(`${API_URL}/tasks/${id}`, { method: "DELETE" });
+      fetchTasks();
+    }
+
+    // Load tasks on page load
+    fetchTasks();
+  </script>
+</body>
+</html>
