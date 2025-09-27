@@ -5,7 +5,6 @@ const connection = new Client({
   port: 5432,
   user:"postgres",
   password: "0000",
-  database: "Club_Sys"
   database: "Task Manager App"
 });
 
