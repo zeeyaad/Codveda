@@ -254,3 +254,4 @@ See `LoaderExample.jsx` for comprehensive usage examples including:
    - Show loaders for operations > 200ms
    - Use skeleton loaders for content
    - Provide progress feedback when possible
+

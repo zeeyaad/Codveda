@@ -371,3 +371,4 @@ See `CardExample.jsx` for comprehensive usage examples including:
 - No external dependencies
 - Optimized for 60fps animations
 - Minimal bundle impact
+
